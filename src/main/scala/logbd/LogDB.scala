@@ -2,18 +2,18 @@ package logbd
 
 import java.io._
 
+import scala.collection.SortedMap
 import scala.collection.mutable.ArrayBuffer
 
 class LogDB(dir: File) {
 
-  private var memtable: Map[Int, Int] = Map()
+  private var memtable: SortedMap[Int, Int] = SortedMap()
 
   // restore data during LogDB init
   {
-    memtable = loadAllData().toMap
+    memtable = loadAllData()
     println("membtable: " + memtable)
   }
-
 
   def save(key: Int, value: Int): Unit = {
     val out = new FileOutputStream(dir, true)
@@ -30,8 +30,8 @@ class LogDB(dir: File) {
 
   def get(key: Int): Option[Int] = memtable.get(key)
 
-  private[this] def loadAllData(): Iterable[(Int, Int)] = {
-    val updates = new ArrayBuffer[(Int, Int)]()
+  private[this] def loadAllData(): SortedMap[Int, Int] = {
+    var updates: SortedMap[Int, Int] = SortedMap()
 
     val raf = new RandomAccessFile(dir, "r")
     raf.seek(0)
