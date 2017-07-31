@@ -1,4 +1,4 @@
-package logbd
+package logdb
 
 import java.io._
 
