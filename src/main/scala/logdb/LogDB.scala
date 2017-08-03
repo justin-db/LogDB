@@ -2,12 +2,11 @@ package logdb
 
 import java.io._
 
-import scala.collection.SortedMap
-import scala.collection.mutable.ArrayBuffer
+import logdb.serializer.LogDBSerializer
 
-class LogDB(dir: File) {
+class LogDB[K, V](dir: File)(implicit serializer: LogDBSerializer[K, V]) {
 
-  private var memtable: SortedMap[Int, Int] = SortedMap()
+  private var memtable: Map[K, V] = Map.empty[K, V]
 
   // restore data during LogDB init
   {
@@ -15,9 +14,9 @@ class LogDB(dir: File) {
     println("membtable: " + memtable)
   }
 
-  def save(key: Int, value: Int): Unit = {
+  def save(key: K, value: V): Unit = {
     val out = new FileOutputStream(dir, true)
-    val serializedData = serialize(key, value)
+    val serializedData = serializer.serialize(key, value)
     try {
       out.write(serializedData)
       out.getFD.sync()
@@ -28,10 +27,10 @@ class LogDB(dir: File) {
     memtable += (key -> value)
   }
 
-  def get(key: Int): Option[Int] = memtable.get(key)
+  def get(key: K): Option[V] = memtable.get(key)
 
-  private[this] def loadAllData(): SortedMap[Int, Int] = {
-    var updates: SortedMap[Int, Int] = SortedMap()
+  private[this] def loadAllData(): Map[K, V] = {
+    var updates: Map[K, V] = Map.empty[K, V]
 
     val raf = new RandomAccessFile(dir, "r")
     raf.seek(0)
@@ -39,26 +38,11 @@ class LogDB(dir: File) {
     var offset: Long = 0
 
     while(offset < fileSize) {
-      val key = raf.readInt()
-      val value = raf.readInt()
+      val (key, value) = serializer.deserialize(raf)
       offset = raf.getFilePointer
       updates += ((key, value))
     }
 
     updates
   }
-
-  private[this] def serialize(key: Int, value: Int): Array[Byte] = {
-    val out = new ByteArrayOutputStream()
-    val out2 = new DataOutputStream(out)
-
-    out2.writeInt(key)
-    out2.writeInt(value)
-
-    out.toByteArray
-  }
-}
-
-object LogDB {
-  def apply(path: String): LogDB = new LogDB(new File(path))
 }
