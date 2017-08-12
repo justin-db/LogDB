@@ -3,11 +3,11 @@ package logdb.serializer
 import java.io.{ByteArrayOutputStream, DataOutputStream, RandomAccessFile}
 
 trait LogDBSerializer[K, V] {
-  def writeKey(key: K): Array[Byte]
-  def readKey(serialized: Array[Byte]): K
+  protected def writeKey(key: K): Array[Byte]
+  protected def readKey(serialized: Array[Byte]): K
 
-  def writeValue(value: V): Array[Byte]
-  def readValue(serialized: Array[Byte]): V
+  protected def writeValue(value: V): Array[Byte]
+  protected def readValue(serialized: Array[Byte]): V
 
   final def serialize(key: K, value: V): Array[Byte] = {
     def serializeLength(key: Int) = {
